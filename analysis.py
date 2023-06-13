@@ -1,42 +1,43 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 from datetime import date
 import re
-
 df = pd.read_csv('/home/niteshpant/Desktop/fifaAnalysis/fifa21_raw_data.csv')
-
-def convertLBStoKG(weight):
-    for idx, w in weight.iteritems():
-        df.loc[idx, 'Weight(KG)'] = int(w) * (0.453592)
-    
-    #print(df[['Weight', 'Height', 'Weight(KG)']].head(10))
-    return df['Weight(KG)'] 
 
 #print(df.head())
 #print(df.info())
 #print(df.isnull().sum())
 #print(df.columns)
 
+#print(df['Hits'].unique())
+
 '''
     Convert lbs weight to kg and create new column
 '''
 '''
-    #print(df[['Height', 'Weight']].head(10))
+    def convertLBStoKG(weight):
+        for idx, w in weight.iteritems():
+            df.loc[idx, 'Weight(KG)'] = int(w) * (0.453592)
+        
+        #print(df[['Weight', 'Height', 'Weight(KG)']].head(10))
+        return df['Weight(KG)'] 
+        
+    print(df['Weight'].unique())
     newDf = df.dropna(subset=['Weight'])
     weightInKG = newDf['Weight'].str.replace('lbs', '')
     df['Weight(KG)'] = convertLBStoKG(weightInKG)
-    #print(df.head(10))
-
+    print(df.head(10))
 '''
 
 '''
     Convert Height column from inches to cm
 '''
 '''
-    df['Height'] = df['Height'].str.replace('"', '')
-    df['Height'] = df['Height'].str.replace("'", ".")
-    df['Height'] = df['Height'].astype(float) * 30.48
-print(df['Height'].head(10))
+    print(df['Height'].unique())
+    df['Height'] = df['Height'].str.replace('"', '').str.replace("'", '.')
+    df['Height'] = (df['Height'].astype(float) * 30.48).round(2)
+    print(df['Height'].head(10))
 '''
 
 '''
@@ -60,11 +61,24 @@ print(df['Height'].head(10))
     print(df[['Joined', 'Joined Year', 'Joined Month', 'Joined Day']].head(10))
 '''
 
-df['Hits'] = df['Hits'].str.replace("\n", "")
-#df['Hits'] = df['Hits'].str.strip()
-#df['Hits'] = df['Hits'].astype('float')
-#print(df['Hits'].head())
-#print(df['Hits'].describe)
+'''
+    Remove new line character from Hits column and 1.5K to 1500
+'''
+'''
+    def convertKtoThousand(Hits):
+        if 'K' in Hits:
+            Hits = Hits.replace('K', '')
+            Hits = float(Hits) * 1000
+            return int(Hits)
+        else:
+            return Hits
+
+    df['Hits'] = df['Hits'].astype(str)
+    df['Hits'] = df['Hits'].str.lstrip("\n")
+    df['Hits'] = df['Hits'].apply(convertKtoThousand)
+    #print(df['Hits'].head(10))
+    print(df['Hits'].unique())
+'''
 
 '''
     Player playing for current club more than 10 years
@@ -87,10 +101,57 @@ df['Hits'] = df['Hits'].str.replace("\n", "")
 '''
     Convert wage, value, Relase clause from string to int (M =million)
 '''
-print(df[['Wage', 'Value', 'Release Clause']].head(20))
-df['Complete_Wage'] = df['Wage'].str.replace('K', '000')
+'''
+    def convertWage(wage):
+        wage = wage.replace('K', '')
+        wage = wage.lstrip("€")
+        wage = float(wage) * 1000
+        return wage
 
-#print(df['Complete_Wage'].head(20))
-df['Complete_Value'] = df['Value'].str.replace('M', '')
-df['Complete_Value'] = df['Complete_Value'] * 1000000
-print(df['Complete_Value'].head(20))
+    print(df[['Wage', 'Value', 'Release Clause']].head(20))
+    print(df['Wage'].unique())
+    df['Complete_Wage'] = df['Wage'].apply(convertWage)
+    print(df['Complete_Wage'].head(100))
+
+
+    def convertValue(val):
+        if 'M' in val:
+            val = val.replace('M', '')
+            val = float(val) * 1000000
+        else:
+            val = val.replace('K', '')
+            val = float(val) * 1000
+        return val
+
+    df['Complete_Value'] = df['Value'].str.replace('€', '')
+    print(df['Complete_Value'].unique())
+    df['Complete_Value'] = df['Complete_Value'].apply(convertValue)
+    print(df['Complete_Value'].head(20))
+
+
+    def convertReleaseClause(rC):
+        if 'M' in rC:
+            rC = rC.replace('M', '')
+            rC = float(rC) * 1000000
+        else:
+            rC = rC.replace('K', '')
+            rC = float(rC) * 1000
+        return int(rC)
+
+    df['Complete_Release_Clause'] = df['Release Clause'].str.replace('€', '')
+    print(df['Complete_Release_Clause'].unique())
+    df['Complete_Release_Clause'] = df['Complete_Release_Clause'].apply(convertReleaseClause)
+    print(df['Complete_Release_Clause'].head(100))
+'''
+
+'''
+    Separate the Team & Contract column into sperate team & contract columns
+'''
+'''
+    print(df['Team & Contract'].unique())
+    df['Team & Contract'] = df['Team & Contract'].str.strip("\n")
+    df['Team & Contract'] = df['Team & Contract'].str.split("\n")
+    df['Updated Team'] = df['Team & Contract'].str[0]
+    df['Updated Contract'] = df['Team & Contract'].str[1]
+    print(df[['Team & Contract', 'Updated Team', 'Updated Contract']].head(10))
+'''
